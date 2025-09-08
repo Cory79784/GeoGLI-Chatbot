@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+      - EMBEDDING_BACKEND=bge-m3
+      - INDEX_PATH=/app/storage/faiss
+      - TOP_K=6
+    volumes:
+      - ./backend/corpus:/app/corpus
+      - backend_storage:/app/storage
+    networks:
+      - geogli_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - geogli_network
+
+volumes:
+  backend_storage:
+
+networks:
+  geogli_network:
+    driver: bridge
+

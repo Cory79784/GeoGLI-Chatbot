@@ -1,0 +1,67 @@
+"""
+Pydantic v2 models for the GeoGLI chatbot
+"""
+from typing import Dict, List, Optional, Literal
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
+
+
+class QueryRequest(BaseModel):
+    """Request model for non-streaming query endpoint"""
+    q: str = Field(..., max_length=4000, description="User query message")
+    session_id: Optional[str] = Field(None, description="Session identifier")
+    route_hint: Optional[Literal["A", "B", "auto"]] = Field("auto", description="Routing hint")
+    top_k: Optional[int] = Field(None, description="Number of documents to retrieve")
+
+
+class QueryResponse(BaseModel):
+    """Response model for query endpoints"""
+    session_id: str
+    answer: str
+    source_links: List[str]
+    route: Literal["A", "B", "cannot_answer"]
+    latency_ms: int
+
+
+class HealthResponse(BaseModel):
+    """Health check response"""
+    status: str = "ok"
+
+
+class ErrorResponse(BaseModel):
+    """Error response model"""
+    msg: str
+
+
+# LangGraph State - using TypedDict for LangGraph compatibility
+class GraphState(TypedDict):
+    """State object passed through the LangGraph workflow"""
+    session_id: str
+    message: str
+    route: Literal["A", "B", "auto", "cannot_answer"]
+    parsed: Dict  # {location?, time?, indicator?}
+    answer: str
+    citations: List[Dict]  # [{source, page?}]
+    source_links: List[str]
+    reason: Optional[str]
+
+
+# SSE Event models
+class TokenEvent(BaseModel):
+    """Streaming token event"""
+    t: str  # token text
+
+
+class FinalEvent(BaseModel):
+    """Final response event"""
+    session_id: str
+    answer: str
+    source_links: List[str]
+    route: Literal["A", "B", "cannot_answer"]
+    latency_ms: int
+
+
+class ErrorEvent(BaseModel):
+    """Error event"""
+    msg: str
+

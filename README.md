@@ -100,7 +100,10 @@ python -m venv .venv
 call .venv\Scripts\activate.bat
 
 # 2. Install dependencies
-pip install -r requirements.txt
+pip install -r req
+
+set RAG_BM25_ENABLED=true
+
 
 # 2a. Fix dependency compatibility if needed
 # If you get "ImportError: cannot import name 'cached_download'":
@@ -140,6 +143,7 @@ python -m app.rag.ingest --input .\corpus --rebuild
 # 5. Start backend server
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload   or delete reload
 ```
+curl -X POST "http://127.0.0.1:8000/query?q=Saudi%20Arabia%20wildfires&route_hint=auto&session_id=test-1"
 
 **Using Makefile (Linux/Mac):**
 ```bash

@@ -1,0 +1,32 @@
+{
+  "name": "geogli-chatbot-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for UNCCD GeoGLI Chatbot - Green floating chat widget",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "serve": "python -m http.server 8080",
+    "start": "python -m http.server 3000"
+  },
+  "keywords": [
+    "chatbot",
+    "geogli",
+    "unccd",
+    "land-indicators",
+    "frontend"
+  ],
+  "author": "UNCCD GeoGLI Team",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
+
+
+
+
+
+
+
+
+
+

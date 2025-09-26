@@ -65,3 +65,27 @@ class ErrorEvent(BaseModel):
     """Error event"""
     msg: str
 
+
+# BM25 Search models
+class BM25Hit(BaseModel):
+    """BM25 search result hit"""
+    title: Optional[str] = None
+    text: Optional[str] = None
+    section: Optional[str] = None
+    country: Optional[str] = None
+    region: Optional[str] = None
+    images: Optional[List[str]] = None
+    citation_path: Optional[str] = None
+    url: Optional[str] = None
+    source_csv: Optional[str] = None
+    updated_at: Optional[str] = None
+    score: Optional[float] = Field(default=None, alias="_score")
+    intent: Optional[str] = None
+    placeholder: Optional[bool] = None
+
+
+class BM25Response(BaseModel):
+    """BM25 search response"""
+    intent: str
+    hits: List[BM25Hit]
+    query: Optional[str] = None

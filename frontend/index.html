@@ -41,15 +41,18 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 350px;
+            width: 360px;
+            max-width: 560px;
+            min-width: 280px;
             max-height: 500px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
             display: flex;
             flex-direction: column;
             z-index: 1000;
             transition: all 0.3s ease;
+            overflow: hidden;
         }
 
         .chat-widget.minimized {
@@ -153,55 +156,189 @@
             text-decoration: underline;
         }
 
-        .chat-input {
-            padding: 16px;
-            border-top: 1px solid #e5e7eb;
-            background: white;
-            border-radius: 0 0 12px 12px;
+        /* BM25 image rendering */
+        .chat-img {
+            max-width: 100%;
+            border-radius: 6px;
+            margin: 8px 0;
+            display: block;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .input-container {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        .chat-input textarea {
-            flex: 1;
-            border: 1px solid #d1d5db;
+        .bm25-result {
+            margin-bottom: 16px;
+            padding: 12px;
             border-radius: 8px;
-            padding: 8px 12px;
-            font-family: inherit;
+            background: #f8f9fa;
+            border-left: 3px solid #16a34a;
+        }
+
+        .bm25-title {
+            font-weight: bold;
+            color: #16a34a;
+            margin-bottom: 4px;
+        }
+
+        .bm25-text {
+            color: #374151;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .bm25-meta {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .bm25-img-wrap { 
+            margin-top: 8px; 
+        }
+        
+        .bm25-img { 
+            max-width: 100%; 
+            height: auto; 
+            display: block; 
+            border-radius: 8px; 
+        }
+
+        .citation-link {
+            display: inline-block;
+            font-size: 11px;
+            color: #16a34a;
+            text-decoration: none;
+            margin-left: 8px;
+            padding: 2px 6px;
+            border: 1px solid #16a34a;
+            border-radius: 4px;
+        }
+
+        .citation-link:hover {
+            background: #16a34a;
+            color: white;
+        }
+
+        /* Composer */
+        .gli-composer { 
+            padding: 12px 12px 10px; 
+            background: #fafafa; 
+            border-top: 1px solid #e9ecef; 
+        }
+        
+        .gli-input-wrap { 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+        }
+
+        .gli-input {
+            width: 100%;
+            padding: 12px 48px 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            outline: none;
             font-size: 14px;
+            line-height: 1.35;
+            background: #fff;
+            transition: border-color .2s ease, box-shadow .2s ease;
             resize: none;
             min-height: 36px;
             max-height: 100px;
+            font-family: inherit;
+        }
+        
+        .gli-input:focus {
+            border-color: #2fbf71;
+            box-shadow: 0 0 0 3px rgba(47,191,113,.15);
         }
 
-        .chat-input textarea:focus {
-            outline: none;
-            border-color: #16a34a;
-        }
-
-        .send-button {
-            background: #16a34a;
-            color: white;
+        /* Icon button: paper plane */
+        .gli-send-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
             border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 14px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #36c678, #23b058);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
+            box-shadow: 0 6px 14px rgba(35,176,88,.28);
+            transition: transform .12s ease, box-shadow .2s ease, opacity .2s ease;
+            color: #fff;
+        }
+        
+        .gli-send-btn:hover { 
+            transform: translateY(-50%) scale(1.04); 
+            box-shadow: 0 8px 18px rgba(35,176,88,.36); 
+        }
+        
+        .gli-send-btn:active { 
+            transform: translateY(-50%) scale(.98); 
+        }
+        
+        .gli-send-btn:disabled { 
+            opacity: .55; 
+            cursor: not-allowed; 
         }
 
-        .send-button:hover:not(:disabled) {
-            background: #15803d;
+        .gli-icon { 
+            width: 18px; 
+            height: 18px; 
+            fill: currentColor; 
         }
 
-        .send-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
+        /* Footer toolbar */
+        .gli-footer { 
+            margin-top: 10px; 
+            display: flex; 
+            justify-content: flex-end; 
+        }
+        
+        .gli-export-btn {
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            border: none; 
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 600; 
+            font-size: 13px;
+            cursor: pointer;
+            color: #7c4d00;
+            background: #ffd98e;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,.05);
+            transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        
+        .gli-export-btn:hover { 
+            filter: brightness(0.98); 
+            box-shadow: 0 4px 12px rgba(255, 182, 73, .35); 
+        }
+        
+        .gli-export-btn:active { 
+            transform: translateY(1px); 
+        }
+
+        /* Resize handle: right edge */
+        .gli-resize-handle {
+            position: absolute;
+            top: 52px;
+            right: 0;
+            bottom: 0;
+            width: 6px;
+            cursor: ew-resize;
+            background: linear-gradient(to right, transparent, rgba(0,0,0,.06), transparent);
+            opacity: .35;
+            transition: opacity .2s ease;
+        }
+        
+        .gli-resize-handle:hover { 
+            opacity: .7; 
         }
 
         /* Status indicator */
@@ -211,12 +348,20 @@
             margin-top: 4px;
         }
 
-        /* Responsive design */
+        /* Mobile: keep it tidy */
         @media (max-width: 480px) {
-            .chat-widget {
-                width: calc(100vw - 40px);
-                right: 20px;
-                left: 20px;
+            .chat-widget { 
+                right: 10px; 
+                left: 10px; 
+                width: auto; 
+                min-width: 0; 
+            }
+            .gli-footer { 
+                justify-content: stretch; 
+            }
+            .gli-export-btn { 
+                width: 100%; 
+                justify-content: center; 
             }
         }
     </style>
@@ -232,6 +377,30 @@
             <li>"What are the main land degradation indicators?"</li>
             <li>"How is vegetation productivity measured?"</li>
             <li>"Tell me about soil organic carbon trends"</li>
+            <li>"What is the percentage breakdown of land use in Kenya for agriculture, urban areas, and protected areas?"</li>
+            <li>"What was the total area of land degradation in Kenya between 2001 and 2015?"</li>
+            <li>"wildfires in Saudi Arabia"</li>
+            <li>"show Saudi stressors"</li>
+
+            <li>We implemented four main query intents:
+
+ask.country – country-level information (e.g., Saudi Arabia wildfires).
+
+ask.region – regional information.
+
+ask.commit_country – country commitments.
+
+ask.commit_region – regional commitments.
+
+Post-processing logic ensures:
+
+If BM25 finds hits → directly return cards (with title, text, citation, and images).
+
+If no hits and dense retrieval is disabled → return fallback from the LLM.
+
+Streamed responses are supported via SSE for integration with the frontend.
+
+I mainly worked on data ingestion (snapshots + citations), BM25 setup, fixing query endpoints (GET/POST), and enabling image rendering in the chat cards.</li>
         </ul>
     </div>
 
@@ -249,21 +418,43 @@
                 </div>
             </div>
             
-            <div class="chat-input">
-                <div class="input-container">
+            <!-- Chat composer -->
+            <div class="gli-composer">
+                <div class="gli-input-wrap">
+                    <!-- keep your existing input/textarea element and id -->
                     <textarea 
                         id="messageInput" 
+                        class="gli-input" 
+                        rows="1" 
                         placeholder="Ask about land indicators..."
-                        rows="1"
                         maxlength="4000"
                     ></textarea>
-                    <button class="send-button" id="sendButton" onclick="sendMessage()">
-                        Send
+
+                    <!-- Iconic Send button (keep id=sendButton so existing JS works) -->
+                    <button id="sendButton" class="gli-send-btn" aria-label="Send message" title="Send" onclick="sendMessage()">
+                        <!-- Paper plane SVG -->
+                        <svg class="gli-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2.01 21l20-9L2.01 3 2 10l14 2-14 2z"></path>
+                        </svg>
                     </button>
                 </div>
+
+                <!-- Footer toolbar (Export PDF moved here) -->
+                <div class="gli-footer">
+                    <button id="exportButton" class="gli-export-btn" aria-label="Export conversation as PDF" onclick="exportToPDF()">
+                        <svg class="gli-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16l4-4h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm4 4h2a2 2 0 0 1 2 2v12l-4-4h-2V6z"></path>
+                        </svg>
+                        <span>Export PDF</span>
+                    </button>
+                </div>
+                
                 <div class="status" id="status">Ready</div>
             </div>
         </div>
+
+        <!-- Right-edge resize handle (place as last child inside the floating widget container) -->
+        <div class="gli-resize-handle" title="Drag to resize"></div>
     </div>
 
     <script>
@@ -343,6 +534,146 @@
             return messageDiv;
         }
 
+        // Render BM25 hits (simplified version for bm25 events)
+        function renderBm25Hits(hits) {
+            const container = document.getElementById('chatMessages');
+            const wrap = document.createElement('div');
+            wrap.className = 'message assistant';
+
+            hits.forEach((h) => {
+                const card = document.createElement('div');
+                card.className = 'bm25-result';
+
+                if (h.title) {
+                    const t = document.createElement('div');
+                    t.className = 'bm25-title';
+                    t.textContent = h.title;
+                    card.appendChild(t);
+                }
+
+                if (h.text) {
+                    const p = document.createElement('div');
+                    p.className = 'bm25-text';
+                    p.textContent = h.text;
+                    card.appendChild(p);
+                }
+
+                if (Array.isArray(h.images) && h.images[0]) {
+                    const imgWrap = document.createElement('div');
+                    imgWrap.className = 'bm25-img-wrap';
+
+                    const img = document.createElement('img');
+                    img.className = 'bm25-img';
+                    img.src = API_BASE_URL + h.images[0];  // Convert relative to absolute URL
+                    img.alt = h.title || 'chart';
+                    img.loading = 'lazy';
+
+                    imgWrap.appendChild(img);
+                    card.appendChild(imgWrap);
+                }
+
+                const meta = document.createElement('div');
+                meta.className = 'bm25-meta';
+                if (h.url) {
+                    const a1 = document.createElement('a');
+                    a1.href = h.url; a1.target = '_blank'; a1.textContent = 'Open';
+                    meta.appendChild(a1);
+                }
+                if (h.citation_path) {
+                    const a2 = document.createElement('a');
+                    a2.href = h.citation_path; a2.target = '_blank'; a2.textContent = 'Citation';
+                    a2.className = 'citation-link';
+                    if (meta.childNodes.length) meta.appendChild(document.createTextNode(' · '));
+                    meta.appendChild(a2);
+                }
+                if (meta.childNodes.length) card.appendChild(meta);
+
+                wrap.appendChild(card);
+            });
+
+            container.appendChild(wrap);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Render BM25 structured response with images
+        function renderBM25Response(response) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            
+            // Add intent info
+            const intentDiv = document.createElement('div');
+            intentDiv.className = 'bm25-meta';
+            intentDiv.textContent = `Intent: ${response.intent} (${response.hits.length} results)`;
+            messageDiv.appendChild(intentDiv);
+            
+            // Render each hit
+            response.hits.forEach((hit, index) => {
+                const hitDiv = document.createElement('div');
+                hitDiv.className = 'bm25-result';
+                
+                // Title
+                if (hit.title) {
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'bm25-title';
+                    titleDiv.textContent = hit.title;
+                    hitDiv.appendChild(titleDiv);
+                }
+                
+                // Text content
+                if (hit.text) {
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'bm25-text';
+                    textDiv.textContent = hit.text;
+                    hitDiv.appendChild(textDiv);
+                }
+                
+                // Images (inline rendering)
+                if (hit.images && Array.isArray(hit.images) && hit.images.length > 0) {
+                    hit.images.forEach(imagePath => {
+                        if (imagePath) {
+                            const img = document.createElement('img');
+                            img.className = 'chat-img';
+                            img.src = API_BASE_URL + imagePath; // Convert relative to absolute URL
+                            img.alt = hit.title || 'Chart';
+                            img.onerror = function() {
+                                console.warn('Failed to load image:', imagePath);
+                                this.style.display = 'none';
+                            };
+                            hitDiv.appendChild(img);
+                        }
+                    });
+                }
+                
+                // Citation link
+                if (hit.citation_path) {
+                    const citationLink = document.createElement('a');
+                    citationLink.className = 'citation-link';
+                    citationLink.href = hit.citation_path; // Already mapped to /static-data/
+                    citationLink.textContent = 'Citation';
+                    citationLink.target = '_blank';
+                    hitDiv.appendChild(citationLink);
+                }
+                
+                // Metadata
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'bm25-meta';
+                const metaParts = [];
+                if (hit.country) metaParts.push(`Country: ${hit.country}`);
+                if (hit.region) metaParts.push(`Region: ${hit.region}`);
+                if (hit.section) metaParts.push(`Section: ${hit.section}`);
+                if (hit.score) metaParts.push(`Score: ${hit.score.toFixed(3)}`);
+                metaDiv.textContent = metaParts.join(' • ');
+                hitDiv.appendChild(metaDiv);
+                
+                messageDiv.appendChild(hitDiv);
+            });
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
         // Update loading message
         function updateLoadingMessage(messageDiv, token) {
             if (messageDiv && messageDiv.classList.contains('loading')) {
@@ -383,6 +714,13 @@
                 currentEventSource.close();
             }
 
+            // Use streaming endpoint (now supports BM25 pre-routing)
+            // BM25 hits will be returned as 'final' events with structured data
+            startStreamingResponse(message, loadingMessage);
+        }
+
+        // Streaming response handler (extracted from sendMessage)
+        function startStreamingResponse(message, loadingMessage) {
             // Build query parameters
             const params = new URLSearchParams({
                 q: message,
@@ -413,6 +751,31 @@
                 }
             });
 
+            // Add listener for BM25 events
+            currentEventSource.addEventListener('bm25', function(event) {
+                try {
+                    const payload = JSON.parse(event.data || '{}');
+                    const hits = Array.isArray(payload.hits) ? payload.hits : [];
+                    
+                    // Update session ID if available
+                    if (payload.session_id) {
+                        sessionId = payload.session_id;
+                        localStorage.setItem('geogli_session_id', sessionId);
+                    }
+                    
+                    loadingMessage.remove();
+                    renderBm25Hits(hits);
+                    status.textContent = `Ready`;
+                    setLoading(false);
+                } catch (e) {
+                    console.error('bm25 parse error', e, event.data);
+                    loadingMessage.textContent = 'BM25 payload parse error.';
+                    loadingMessage.classList.remove('loading');
+                    loadingMessage.classList.add('assistant');
+                    setLoading(false);
+                }
+            });
+
             currentEventSource.addEventListener('final', function(event) {
                 try {
                     const data = JSON.parse(event.data);
@@ -423,10 +786,22 @@
                         localStorage.setItem('geogli_session_id', sessionId);
                     }
                     
-                    // Update final message with sources
+                    // Check if this is a BM25 structured response (has intent and hits)
+                    if (data.intent && data.hits && Array.isArray(data.hits)) {
+                        // This is a BM25 response - render with images
+                        loadingMessage.remove();
+                        renderBM25Response(data);
+                        status.textContent = `Ready (${data.latency_ms || 0}ms)`;
+                        setLoading(false);
+                        currentEventSource.close();
+                        currentEventSource = null;
+                        return;
+                    }
+                    
+                    // Regular RAG response - update final message with sources
                     loadingMessage.classList.remove('loading');
                     loadingMessage.classList.add('assistant');
-                    loadingMessage.textContent = data.answer;
+                    loadingMessage.textContent = data.answer || 'No response generated';
                     
                     // Add sources if available
                     if (data.source_links && data.source_links.length > 0) {
@@ -450,13 +825,22 @@
                     }
                     
                     // Update status
-                    status.textContent = `Ready (${data.latency_ms}ms)`;
+                    status.textContent = `Ready (${data.latency_ms || 0}ms)`;
                     
                 } catch (e) {
                     console.error('Error parsing final event:', e);
                     loadingMessage.textContent = 'Error processing response';
                 } finally {
                     setLoading(false);
+                    currentEventSource.close();
+                    currentEventSource = null;
+                }
+            });
+
+            // Add listener for done events (to close connection)
+            currentEventSource.addEventListener('done', function(event) {
+                console.log('SSE done event received');
+                if (currentEventSource) {
                     currentEventSource.close();
                     currentEventSource = null;
                 }
@@ -488,6 +872,95 @@
             messageInput.focus();
         });
 
+        // Export to PDF function
+        function exportToPDF() {
+            if (!sessionId) {
+                alert('No conversation to export yet. Start chatting first!');
+                return;
+            }
+            
+            // Disable button during export
+            const exportBtn = document.getElementById('exportButton');
+            exportBtn.disabled = true;
+            exportBtn.textContent = '📄 Exporting...';
+            
+            fetch(`${API_BASE_URL}/export/${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Export failed: ${response.status}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Create download link
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `conversation_${sessionId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Show success message
+                    status.textContent = 'PDF exported successfully!';
+                    setTimeout(() => {
+                        status.textContent = 'Ready';
+                    }, 3000);
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    alert('Failed to export conversation. Please try again.');
+                    status.textContent = 'Export failed';
+                    setTimeout(() => {
+                        status.textContent = 'Ready';
+                    }, 3000);
+                })
+                .finally(() => {
+                    // Re-enable button
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = '📄 Export PDF';
+                });
+        }
+
+        // Horizontal resize functionality
+        (function() {
+            const widget = document.getElementById('chatWidget');
+            const handle = widget && widget.querySelector('.gli-resize-handle');
+            if (!widget || !handle) return;
+
+            const MIN_W = 280;
+            const MAX_W = 560;
+
+            let startX = 0;
+            let startW = 0;
+            let dragging = false;
+
+            const onMouseMove = (e) => {
+                if (!dragging) return;
+                const dx = e.clientX - startX;
+                // widget anchored to right: increase width when dragging to the right (dx > 0)
+                let newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
+                widget.style.width = newW + 'px';
+            };
+
+            const onMouseUp = () => {
+                dragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            handle.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startX = e.clientX;
+                // ensure width is numeric
+                startW = parseFloat(getComputedStyle(widget).width);
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                e.preventDefault(); // prevent text selection
+            });
+        })();
+
         // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
             if (currentEventSource) {
@@ -497,4 +970,8 @@
     </script>
 </body>
 </html>
+
+
+
+
 

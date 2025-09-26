@@ -92,3 +92,12 @@ Planned improvements include:
 
 The Global Land Indicator system represents a crucial tool for monitoring and combating land degradation worldwide. Continued development and application of these indicators will support global efforts toward sustainable land management and land degradation neutrality.
 
+
+
+
+
+
+
+
+
+

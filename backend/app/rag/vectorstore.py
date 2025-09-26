@@ -1,6 +1,5 @@
 """FAISS vector store wrapper using IndexFlatIP (Inner Product)"""
 import os
-import pickle
 import json
 from typing import List, Dict, Optional, Tuple
 import numpy as np
@@ -11,50 +10,66 @@ class FAISSVectorStore:
     """
     FAISS vector store wrapper for dense retrieval
     Uses IndexFlatIP (Inner Product) for similarity search
+    Robust to dynamic dimension changes
     """
     
     def __init__(self, index_path: str = None):
         self.index_path = index_path or os.getenv("INDEX_PATH", "./storage/faiss")
+        self.faiss_file = os.path.join(self.index_path, "index.faiss")
+        self.meta_file = os.path.join(self.index_path, "metadata.json")
+        self.info_file = os.path.join(self.index_path, "info.json")
         self.index: Optional[faiss.IndexFlatIP] = None
         self.metadata: List[Dict] = []
         self.dimension: Optional[int] = None
     
-    def initialize_index(self, dimension: int):
-        """Initialize a new FAISS index"""
-        self.dimension = dimension
-        # IndexFlatIP for inner product similarity (works well with normalized embeddings)
-        self.index = faiss.IndexFlatIP(dimension)
+    def create_with_dim(self, dim: int):
+        """Create a new FAISS index with specified dimension"""
+        self.index = faiss.IndexFlatIP(dim)
+        self.dimension = dim
         self.metadata = []
-        print(f"Initialized new FAISS index with dimension {dimension}")
+        os.makedirs(self.index_path, exist_ok=True)
+        self._persist_info()
+        print(f"Created new FAISS index with dimension {dim}")
     
-    def add_vectors(self, vectors: np.ndarray, metadata_list: List[Dict]):
+    def _persist_info(self):
+        """Persist dimension info to disk"""
+        with open(self.info_file, "w", encoding="utf-8") as f:
+            json.dump({"dim": self.dimension}, f)
+    
+    def add(self, vectors: List[List[float]], metadatas: List[Dict]):
         """
         Add vectors and their metadata to the index
         
         Args:
-            vectors: Array of embedding vectors (normalized)
-            metadata_list: List of metadata dicts for each vector
+            vectors: List of embedding vectors
+            metadatas: List of metadata dicts for each vector
         """
+        arr = np.array(vectors, dtype="float32")
+        
         if self.index is None:
-            raise RuntimeError("Index not initialized")
+            # Lazy create if not exists
+            self.create_with_dim(arr.shape[1])
         
-        if len(vectors) != len(metadata_list):
-            raise ValueError("Number of vectors must match number of metadata entries")
+        if arr.shape[1] != self.dimension:
+            raise ValueError(f"FAISS dim mismatch: {arr.shape[1]} vs {self.dimension}")
         
-        # Add vectors to FAISS index
-        self.index.add(vectors.astype(np.float32))
+        # Normalize vectors for inner product similarity
+        faiss.normalize_L2(arr)
+        
+        # Add to FAISS index
+        self.index.add(arr)
         
         # Store metadata
-        self.metadata.extend(metadata_list)
+        self.metadata.extend(metadatas)
         
         print(f"Added {len(vectors)} vectors to index. Total: {self.index.ntotal}")
     
-    def search(self, query_vector: np.ndarray, top_k: int = 6) -> List[Dict]:
+    def search(self, vector: List[float], top_k: int = 6) -> List[Dict]:
         """
         Search for similar vectors
         
         Args:
-            query_vector: Query embedding vector
+            vector: Query embedding vector
             top_k: Number of results to return
             
         Returns:
@@ -63,18 +78,19 @@ class FAISSVectorStore:
         if self.index is None or self.index.ntotal == 0:
             return []
         
-        # Ensure query vector is normalized and correct shape
-        query_vector = query_vector.reshape(1, -1).astype(np.float32)
+        # Convert to numpy and normalize
+        v = np.array([vector], dtype="float32")
+        faiss.normalize_L2(v)
         
         # Search in FAISS index
-        scores, indices = self.index.search(query_vector, min(top_k, self.index.ntotal))
+        D, I = self.index.search(v, min(top_k, self.index.ntotal))
         
         results = []
-        for score, idx in zip(scores[0], indices[0]):
-            if idx >= 0 and idx < len(self.metadata):  # Valid index
-                result = self.metadata[idx].copy()
-                result['score'] = float(score)
-                results.append(result)
+        for score, idx in zip(D[0], I[0]):
+            if idx == -1 or idx >= len(self.metadata):
+                continue
+            meta = self.metadata[idx]
+            results.append({"score": float(score), "meta": meta})
         
         return results
     
@@ -83,57 +99,58 @@ class FAISSVectorStore:
         if self.index is None:
             raise RuntimeError("No index to save")
         
-        os.makedirs(self.index_path, exist_ok=True)
-        
         # Save FAISS index
-        index_file = os.path.join(self.index_path, "index.faiss")
-        faiss.write_index(self.index, index_file)
+        faiss.write_index(self.index, self.faiss_file)
         
         # Save metadata
-        metadata_file = os.path.join(self.index_path, "metadata.json")
-        with open(metadata_file, 'w', encoding='utf-8') as f:
+        with open(self.meta_file, 'w', encoding='utf-8') as f:
             json.dump(self.metadata, f, ensure_ascii=False, indent=2)
         
         # Save dimension info
-        info_file = os.path.join(self.index_path, "info.json")
-        with open(info_file, 'w') as f:
-            json.dump({"dimension": self.dimension, "total_vectors": self.index.ntotal}, f)
+        self._persist_info()
         
         print(f"Saved index with {self.index.ntotal} vectors to {self.index_path}")
     
-    def load(self) -> bool:
+    def load(self):
         """
         Load index and metadata from disk
         
-        Returns:
-            True if loaded successfully, False otherwise
+        Raises:
+            FileNotFoundError: If index files don't exist
+            Exception: For other loading errors
         """
-        try:
-            index_file = os.path.join(self.index_path, "index.faiss")
-            metadata_file = os.path.join(self.index_path, "metadata.json")
-            info_file = os.path.join(self.index_path, "info.json")
-            
-            if not all(os.path.exists(f) for f in [index_file, metadata_file, info_file]):
-                return False
-            
-            # Load FAISS index
-            self.index = faiss.read_index(index_file)
-            
-            # Load metadata
-            with open(metadata_file, 'r', encoding='utf-8') as f:
+        if not (os.path.exists(self.faiss_file) and os.path.exists(self.info_file)):
+            raise FileNotFoundError("FAISS index not found")
+        
+        # Load FAISS index
+        self.index = faiss.read_index(self.faiss_file)
+        
+        # Load dimension info
+        with open(self.info_file, "r", encoding="utf-8") as f:
+            info = json.load(f)
+        self.dimension = info["dim"]
+        
+        # Load metadata
+        if os.path.exists(self.meta_file):
+            with open(self.meta_file, "r", encoding="utf-8") as f:
                 self.metadata = json.load(f)
-            
-            # Load dimension info
-            with open(info_file, 'r') as f:
-                info = json.load(f)
-                self.dimension = info["dimension"]
-            
-            print(f"Loaded index with {self.index.ntotal} vectors from {self.index_path}")
-            return True
-            
-        except Exception as e:
-            print(f"Failed to load index: {e}")
-            return False
+        else:
+            self.metadata = []
+        
+        print(f"Loaded index with {self.index.ntotal} vectors from {self.index_path}")
+    
+    def exists(self) -> bool:
+        """
+        Check if index files exist without loading them
+        
+        Returns:
+            True if all required index files exist, False otherwise
+        """
+        return (
+            os.path.exists(self.faiss_file)
+            and os.path.exists(self.info_file)
+            and os.path.exists(self.meta_file)
+        )
     
     def get_stats(self) -> Dict:
         """Get statistics about the vector store"""

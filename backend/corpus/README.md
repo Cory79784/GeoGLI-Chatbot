@@ -38,3 +38,12 @@ corpus/
 - Metadata (country, year, etc.) can be extracted from filenames or content
 - Large documents are automatically chunked for better retrieval
 
+
+
+
+
+
+
+
+
+

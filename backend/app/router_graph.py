@@ -5,9 +5,15 @@ Currently configured to route all queries to Route B (RAG)
 from typing import Dict, Any
 from langgraph.graph import Graph
 from app.schemas import GraphState
-from app.rag.retriever import dense_retriever
-from app.llm.provider import llm_provider
 import time
+import os
+
+# Conditional import for dense retriever based on environment
+RAG_DENSE_ENABLED = os.getenv("RAG_DENSE_ENABLED", "false").lower() == "true"
+if RAG_DENSE_ENABLED:
+    from app.rag.retriever import dense_retriever
+else:
+    dense_retriever = None
 
 
 def start_node(state: GraphState) -> GraphState:
@@ -150,6 +156,95 @@ def run_route_b(state: GraphState) -> GraphState:
     message = state["message"]
     
     try:
+        # --- BM25 PRE-ROUTING (minimal) ---
+        # Check for BM25 stores and attempt intent-based routing first
+        from fastapi import FastAPI
+        import inspect
+        
+        # Get the FastAPI app instance from the current context
+        # TODO: NEED YOUR INPUT: confirm this method to access app.state
+        app = None
+        for frame_info in inspect.stack():
+            frame_locals = frame_info.frame.f_locals
+            if 'app' in frame_locals and hasattr(frame_locals['app'], 'state'):
+                app = frame_locals['app']
+                break
+        
+        if app and hasattr(app.state, 'bm25_stores') and app.state.bm25_stores:
+            try:
+                from app.search.router_intent import route as route_intent
+                from app.search.handlers import (
+                    handle_ask_country, handle_commit_region, 
+                    handle_commit_country, handle_law_lookup,
+                    format_hits_for_response
+                )
+                
+                # Route the query to get intent and slots
+                slots = route_intent(message)
+                intent = slots.get("intent", "ask.country")
+                hits = []
+                
+                # Handle different intents
+                if intent == "ask.country":
+                    hits = handle_ask_country(message, slots, app.state.bm25_stores)
+                elif intent == "commit.region":
+                    hits = handle_commit_region(message, slots, app.state.bm25_stores)
+                elif intent == "commit.country":
+                    hits = handle_commit_country(message, slots, app.state.bm25_stores)
+                elif intent == "law.lookup":
+                    hits = handle_law_lookup(message, slots, app.state.bm25_stores)
+                
+                # Debug log: print BM25 retrieval results
+                print(f"🔍 BM25 DEBUG: intent='{intent}', query='{message}', hits_found={len(hits)}")
+                for i, hit in enumerate(hits[:3]):  # Show first 3 hits
+                    print(f"   Hit {i+1}: {hit.get('title', 'N/A')} (score: {hit.get('_score', 0):.3f})")
+                
+                # Always short-circuit and return early (whether hits found or not)
+                # This prevents passing None state into LangGraph
+                if hits:
+                    print(f"✅ BM25 HIT: Found {len(hits)} results - short-circuiting with data")
+                    # Map local file paths to served URLs for frontend image rendering
+                    def to_public_path(p):
+                        if isinstance(p, str) and p.startswith("backend/data"):
+                            return p.replace("backend/data", "/static-data")
+                        return p
+                    
+                    for hit in hits:
+                        if "images" in hit and isinstance(hit["images"], list):
+                            hit["images"] = [to_public_path(x) for x in hit["images"]]
+                        if "citation_path" in hit and isinstance(hit["citation_path"], str):
+                            hit["citation_path"] = to_public_path(hit["citation_path"])
+                    
+                    # Format hits and return JSON payload directly
+                    formatted_hits = format_hits_for_response(hits, intent)
+                    return {"intent": intent, "hits": formatted_hits}  # TODO confirm schema
+                else:
+                    print(f"❌ BM25 MISS: No results found - short-circuiting with empty hits")
+                    return {"intent": intent, "hits": []}  # TODO confirm schema
+                    
+            except Exception as bm25_error:
+                print(f"BM25 pre-routing error: {bm25_error}")
+                # Fall through to regular processing
+        
+        # Check if dense RAG is enabled before proceeding
+        if not getattr(app.state, "rag_dense_enabled", False):
+            print("Dense RAG disabled - returning cannot_answer")
+            state["route"] = "cannot_answer"
+            state["reason"] = "Dense RAG disabled, only BM25 search available"
+            state["answer"] = "I can only search the available knowledge base. Please try a more specific query about land indicators, commitments, or legislation."
+            return state
+        
+        # --- END BM25 PRE-ROUTING ---
+        
+        # Regular RAG processing (unchanged)
+        # Check if dense retriever is available
+        if dense_retriever is None:
+            print("Dense retriever disabled - returning cannot_answer")
+            state["route"] = "cannot_answer"
+            state["reason"] = "Dense retriever not available (RAG_DENSE_ENABLED=false)"
+            state["answer"] = "I can only search the available knowledge base. Please try a more specific query about land indicators, commitments, or legislation."
+            return state
+        
         # Retrieve relevant documents
         top_k = 6  # TODO: PERFORMANCE - make configurable
         retrieved_docs = dense_retriever.retrieve(message, top_k)
@@ -169,8 +264,13 @@ def run_route_b(state: GraphState) -> GraphState:
             state["reason"] = "Retrieved documents have low confidence scores"
             return state
         
-        # Generate answer using LLM
-        answer = llm_provider.generate(high_confidence_docs, message)
+        # Generate answer using LLM (lazy import)
+        try:
+            from app.llm.provider import llm_provider
+            answer = llm_provider.generate(high_confidence_docs, message)
+        except ImportError:
+            # LLM provider not available - return basic response
+            answer = f"Found {len(high_confidence_docs)} relevant documents for your query about land indicators."
         
         # Extract source links
         source_links = []

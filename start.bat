@@ -21,8 +21,11 @@ python -c "import sentence_transformers" 2>nul || (
 echo Setting up environment...
 if not exist .env copy env.example .env
 
-echo Building vector index...
-python -m app.rag.ingest --input .\corpus --rebuild
+echo Initializing database...
+python init_db.py
+
+echo Building vector index with OpenAI embeddings...
+python -m app.rag.ingest_openai
 
 echo.
 echo === Starting Backend Server ===
